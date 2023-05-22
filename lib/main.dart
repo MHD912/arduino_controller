@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-//import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as http;
 
 void main() => runApp(const MyApp());
 
@@ -95,22 +95,66 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class WifiPage extends StatelessWidget {
+class WifiPage extends StatefulWidget {
   const WifiPage({super.key});
+
+  @override
+  WifiPageState createState() => WifiPageState();
+}
+
+class WifiPageState extends State<WifiPage> {
+  bool ledState = false;
+  double temperature = 0.0;
+
+  Future<void> toggleLed() async {
+    final response = await http.get('http://arduino_ip_address/LED' as Uri);
+    if (response.statusCode == 200) {
+      setState(() {
+        ledState = !ledState;
+      });
+    }
+  }
+
+  Future<void> fetchTemperature() async {
+    final response =
+        await http.get('http://arduino_ip_address/temperature' as Uri);
+    if (response.statusCode == 200) {
+      setState(() {
+        temperature = double.parse(response.body);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wi-Fi Interface'),
+        title: const Text('Arduino Over Wi-Fi'),
       ),
-      body: const Center(
-        child: Text(
-          'This is the Wi-Fi Interface',
-          style: TextStyle(fontSize: 20),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 22),
+            Text(
+              'Temperature: $temperature °C',
+              style: const TextStyle(fontSize: 23),
+            ),
+            const SizedBox(height: 22),
+            ElevatedButton(
+              onPressed: toggleLed,
+              child: Text(ledState ? 'LED ON' : 'LED OFF'),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTemperature();
   }
 }
 
