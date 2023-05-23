@@ -105,9 +105,17 @@ class WifiPage extends StatefulWidget {
 class WifiPageState extends State<WifiPage> {
   bool ledState = false;
   double temperature = 0.0;
+  String arduinoIpAddress = '';
+  TextEditingController ipAddressController = TextEditingController();
+
+  @override
+  void dispose() {
+    ipAddressController.dispose();
+    super.dispose();
+  }
 
   Future<void> toggleLed() async {
-    final response = await http.get('http://arduino_ip_address/LED' as Uri);
+    final response = await http.get('http://$arduinoIpAddress/LED' as Uri);
     if (response.statusCode == 200) {
       setState(() {
         ledState = !ledState;
@@ -117,7 +125,7 @@ class WifiPageState extends State<WifiPage> {
 
   Future<void> fetchTemperature() async {
     final response =
-        await http.get('http://arduino_ip_address/temperature' as Uri);
+        await http.get('http://$arduinoIpAddress/temperature' as Uri);
     if (response.statusCode == 200) {
       setState(() {
         temperature = double.parse(response.body);
@@ -132,20 +140,39 @@ class WifiPageState extends State<WifiPage> {
         title: const Text('Arduino Over Wi-Fi'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 22),
-            Text(
-              'Temperature: $temperature °C',
-              style: const TextStyle(fontSize: 23),
-            ),
-            const SizedBox(height: 22),
-            ElevatedButton(
-              onPressed: toggleLed,
-              child: Text(ledState ? 'LED ON' : 'LED OFF'),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextField(
+                controller: ipAddressController,
+                decoration: const InputDecoration(
+                  labelText: 'Arduino IP Address',
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    arduinoIpAddress = ipAddressController.text;
+                  });
+                },
+                child: const Text('Submit'),
+              ),
+              const SizedBox(height: 300),
+              Text(
+                'Temperature: $temperature °C',
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: toggleLed,
+                child: Text(ledState ? 'LED OFF' : 'LED ON'),
+              ),
+              const Padding(padding: EdgeInsets.only(top: 150)),
+            ],
+          ),
         ),
       ),
     );
