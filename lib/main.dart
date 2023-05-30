@@ -105,7 +105,8 @@ class WifiPage extends StatefulWidget {
 class WifiPageState extends State<WifiPage> {
   bool ledState = false;
   double temperature = 0.0;
-  String arduinoIpAddress = '';
+  bool ipSubmitted = false;
+  Uri arduinoUrl = Uri.parse("");
   TextEditingController ipAddressController = TextEditingController();
 
   @override
@@ -115,21 +116,25 @@ class WifiPageState extends State<WifiPage> {
   }
 
   Future<void> toggleLed() async {
-    final response = await http.get('http://$arduinoIpAddress/LED' as Uri);
-    if (response.statusCode == 200) {
-      setState(() {
-        ledState = !ledState;
-      });
+    if (ipSubmitted) {
+      final response = await http.get(Uri.parse('http://$arduinoUrl/LED'));
+      if (response.statusCode == 200) {
+        setState(() {
+          ledState = !ledState;
+        });
+      }
     }
   }
 
   Future<void> fetchTemperature() async {
-    final response =
-        await http.get('http://$arduinoIpAddress/temperature' as Uri);
-    if (response.statusCode == 200) {
-      setState(() {
-        temperature = double.parse(response.body);
-      });
+    if (ipSubmitted) {
+      final response =
+          await http.get(Uri.parse('http://$arduinoUrl/temperature'));
+      if (response.statusCode == 200) {
+        setState(() {
+          temperature = double.parse(response.body);
+        });
+      }
     }
   }
 
@@ -145,22 +150,31 @@ class WifiPageState extends State<WifiPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextField(
-                controller: ipAddressController,
-                decoration: const InputDecoration(
-                  labelText: 'Arduino IP Address',
+              Expanded(
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: ipAddressController,
+                      decoration: const InputDecoration(
+                        labelText: 'Arduino IP Address',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          arduinoUrl = Uri.parse(ipAddressController.text);
+                          ipSubmitted = true;
+                        });
+                      },
+                      child: const Text('Submit'),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    arduinoIpAddress = ipAddressController.text;
-                  });
-                },
-                child: const Text('Submit'),
+              const Flexible(
+                child: SizedBox(height: 20),
               ),
-              const SizedBox(height: 300),
               Text(
                 'Temperature: $temperature °C',
                 style: const TextStyle(fontSize: 20),
@@ -170,7 +184,6 @@ class WifiPageState extends State<WifiPage> {
                 onPressed: toggleLed,
                 child: Text(ledState ? 'LED OFF' : 'LED ON'),
               ),
-              const Padding(padding: EdgeInsets.only(top: 150)),
             ],
           ),
         ),
