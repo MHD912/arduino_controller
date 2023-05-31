@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+//import 'package:dio/dio.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -9,210 +13,96 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Arduino Controller',
-      theme: ThemeData.dark().copyWith(
-        appBarTheme: const AppBarTheme(
-          color: Colors.blue, // Set the app bar color to blue
-        ),
+      title: 'NodeMCU Control',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
       ),
-      home: const HomePage(),
-      debugShowCheckedModeBanner:
-          false, // Add this line to remove the debug banner
-
-      routes: {
-        '/wifi': (context) => const WifiPage(), // Route for the Wi-Fi interface
-        '/bluetooth': (context) =>
-            const BluetoothPage(), // Route for the Bluetooth interface
-      },
+      home: const MyHomePage(),
     );
   }
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  MyHomePageState createState() => MyHomePageState();
+}
+
+class MyHomePageState extends State<MyHomePage> {
+  final String nodeMCUIpAddress = '192.168.1.105'; // Replace with your NodeMCU's IP address
+  final int nodeMCUPort = 80; // Replace with the port number used in your NodeMCU code
+  bool isLEDTurnedOn = false;
+  String currentTemperature = "0.0";
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('About'),
+        title: const Text('NodeMCU Control'),
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            const DrawerHeader(
-              child: Text(
-                'Menu',
-                style: TextStyle(fontSize: 24),
-              ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'LED Status:',
+              style: TextStyle(fontSize: 24),
             ),
-            ListTile(
-              leading: const Icon(Icons.wifi),
-              title: const Text('Wi-Fi'),
-              onTap: () {
-                // Navigate to the Wi-Fi interface
-                Navigator.pop(context); // Close the drawer
-                Navigator.pushNamed(context, '/wifi');
+            Switch(
+              value: isLEDTurnedOn,
+              onChanged: (value) {
+                setState(() {
+                  isLEDTurnedOn = value;
+                });
+                sendLEDCommand(value);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.bluetooth),
-              title: const Text('Bluetooth'),
-              onTap: () {
-                // Navigate to the Bluetooth interface
-                Navigator.pop(context); // Close the drawer
-                Navigator.pushNamed(context, '/bluetooth');
-              },
+            const SizedBox(height: 40),
+            const Text(
+              'Temperature:',
+              style: TextStyle(fontSize: 24),
+            ),
+            Text(
+              '$currentTemperature °C',
+              style: const TextStyle(fontSize: 32),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: fetchTemperature,
+              child: const Text('Refresh'),
             ),
           ],
         ),
       ),
-      body: Center(
-          child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/aiu_logo.png', // Replace with the actual image path
-            width: 200,
-            height: 200,
-          ),
-          const Padding(padding: EdgeInsets.only(bottom: 50)),
-          const Text(
-            'Welcome to the Arduino Controller!\nPress the menu button to choose the desired communication method.\n',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const Padding(padding: EdgeInsets.only(bottom: 50)),
-          const Text(
-            '----=( Done by )=----\nIslam Al-Abd\n&\nMohammad Hussein Hamed',
-            style: TextStyle(fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      )),
     );
   }
-}
 
-class WifiPage extends StatefulWidget {
-  const WifiPage({super.key});
-
-  @override
-  WifiPageState createState() => WifiPageState();
-}
-
-class WifiPageState extends State<WifiPage> {
-  bool ledState = false;
-  double temperature = 0.0;
-  bool ipSubmitted = false;
-  Uri arduinoUrl = Uri.parse("");
-  TextEditingController ipAddressController = TextEditingController();
-
-  @override
-  void dispose() {
-    ipAddressController.dispose();
-    super.dispose();
-  }
-
-  Future<void> toggleLed() async {
-    if (ipSubmitted) {
-      final response = await http.get(Uri.parse('http://$arduinoUrl/LED'));
-      if (response.statusCode == 200) {
-        setState(() {
-          ledState = !ledState;
-        });
+Future<void> sendLEDCommand(bool isTurnedOn) async {
+    try {
+      String command = isTurnedOn ? 'ON' : 'OFF';
+      final url = Uri.parse('http://$nodeMCUIpAddress:$nodeMCUPort/$command');
+      await http.get(url);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error sending LED command: $e');
       }
     }
   }
 
   Future<void> fetchTemperature() async {
-    if (ipSubmitted) {
-      final response =
-          await http.get(Uri.parse('http://$arduinoUrl/temperature'));
+    try {
+      final url = Uri.parse('http://$nodeMCUIpAddress:$nodeMCUPort');
+      final response = await http.get(url);
       if (response.statusCode == 200) {
         setState(() {
-          temperature = double.parse(response.body);
+          currentTemperature = response.body;
         });
       }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching temperature: $e');
+      }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Arduino Over Wi-Fi'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: ipAddressController,
-                      decoration: const InputDecoration(
-                        labelText: 'Arduino IP Address',
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          arduinoUrl = Uri.parse(ipAddressController.text);
-                          ipSubmitted = true;
-                        });
-                      },
-                      child: const Text('Submit'),
-                    ),
-                  ],
-                ),
-              ),
-              const Flexible(
-                child: SizedBox(height: 20),
-              ),
-              Text(
-                'Temperature: $temperature °C',
-                style: const TextStyle(fontSize: 20),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: toggleLed,
-                child: Text(ledState ? 'LED OFF' : 'LED ON'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    fetchTemperature();
-  }
-}
-
-class BluetoothPage extends StatelessWidget {
-  const BluetoothPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bluetooth Interface'),
-      ),
-      body: const Center(
-        child: Text(
-          'This is the Bluetooth Interface',
-          style: TextStyle(fontSize: 20),
-        ),
-      ),
-    );
   }
 }
