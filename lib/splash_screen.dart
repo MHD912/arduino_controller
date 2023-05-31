@@ -1,17 +1,32 @@
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    Future.delayed(const Duration(seconds: 2), () {
+      Navigator.pushReplacementNamed(context, '/home');
+    });
     return Scaffold(
-      backgroundColor: Colors.white, // Set the background color as per your preference
       body: Center(
-        child: Image.asset(
-          'assets/images/splash_image.png', // Replace with the path to your custom image
-          width: 200, // Customize the width as needed
-          height: 200, // Customize the height as needed
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/aiu_logo.png',
+              width: 150,
+              height: 150,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Wi-Fi MCU',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );

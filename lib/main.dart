@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'about_page.dart';
+import 'splash_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,27 +14,30 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "NodeMCU Controller",
+      title: "Wi-Fi MCU",
       theme: ThemeData.dark().copyWith(
         appBarTheme: const AppBarTheme(
           color: Colors.blue, // Set the app bar color to blue
         ),
       ),
-      home: const HomePage(),
+      home: const SplashScreen(), // Set the SplashScreen as the home route
+      routes: {
+        // Define other routes here if needed
+        '/home': (context) => const HomePage(),
+        '/about': (context) => const AboutPage(),
+      },
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() {
-    return _HomePageState();
-  }
+  HomePageState createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   late String temp;
   late IOWebSocketChannel channel;
   late bool connected;
@@ -111,7 +116,41 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("NodeMCU Controller"),
+        title: const Text("Wi-Fi MCU"),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              title: const Row(
+                children: [
+                  Icon(Icons.info_outline), // Add the info icon here
+                  SizedBox(width: 10),
+                  Text('About'),
+                ],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AboutPage()),
+                );
+              },
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
